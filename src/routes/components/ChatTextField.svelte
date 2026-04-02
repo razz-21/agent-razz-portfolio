@@ -9,13 +9,13 @@
 
 	let {
 		value = $bindable(''),
-		placeholder = 'Ask anything…',
+		placeholder = 'Ask anything...',
 		disabled = false,
-		class: className,
-		onsend,
 		topics = [],
+		class: className,
 		oninput: oninputProp,
 		onkeydown: onkeydownProp,
+		onsend,
 		...restProps
 	}: Omit<HTMLTextareaAttributes, 'children' | 'value'> & {
 		value?: string;
