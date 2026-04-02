@@ -8,6 +8,7 @@
 	import ChatTextField from './components/ChatTextField.svelte';
 	import IntroSection from './components/IntroSection.svelte';
 	import Navbar from './components/Navbar.svelte';
+	import { fetchChatTextStream } from '../services/chat.service.js';
 	import type { ChatMessage } from '$lib/types/chat.js';
 	import type { Component } from 'svelte';
 	import { onMount } from 'svelte';
@@ -20,59 +21,116 @@
 		background: { color: { value: 'transparent' } },
 		particles: {
 			color: {
-				value: '#E5E4E9',
+				value: '#E5E4E9'
 			},
 			links: {
 				enable: true,
-				color: '#E5E4E9',
+				color: '#E5E4E9'
 			},
 			move: {
-				enable: true,
+				enable: true
 			},
 			opacity: {
-				value: 0.5,
+				value: 0.5
 			},
 			number: {
-				value: 50,
-			},
+				value: 50
+			}
 		},
 		style: {
 			position: 'absolute',
 			height: '100%',
-			width: '100%',
-		},
+			width: '100%'
+		}
 	};
 
 	let chatMessage = $state('');
 	let messages = $state<ChatMessage[]>([]);
+	let isRequesting = $state(false);
 
 	const hasConversation = $derived(messages.length > 0);
 
 	function handleChatSend(message: string) {
 		const trimmed = message.trim();
-		if (!trimmed) return;
+		if (!trimmed || isRequesting) return;
 
 		const userTurn: ChatMessage = {
 			id: crypto.randomUUID(),
 			role: 'user',
-			content: trimmed,
+			content: trimmed
 		};
+
+		const assistantId = crypto.randomUUID();
 		const assistantTurn: ChatMessage = {
-			id: crypto.randomUUID(),
+			id: assistantId,
 			role: 'assistant',
-			content:
-				"Thanks for reaching out. I'm a demo reply for now — connect your agent here to respond with real portfolio answers.",
+			content: ''
 		};
+
 		messages = [...messages, userTurn, assistantTurn];
 		chatMessage = '';
+
+		isRequesting = true;
+
+		const errorMessage = 'Sorry — something went wrong. Please try again.';
+		void (async () => {
+			try {
+				for await (const chunk of fetchChatTextStream({ message: trimmed })) {
+					messages = messages.map((m) =>
+						m.id === assistantId
+							? {
+									...m,
+									content: m.content + chunk
+								}
+							: m
+					);
+				}
+			} catch {
+				messages = messages.map((m) =>
+					m.id === assistantId
+						? {
+								...m,
+								content: errorMessage
+							}
+						: m
+				);
+			} finally {
+				isRequesting = false;
+			}
+		})();
 	}
 
-	const askTopics: { label: string; icon: Component }[] = [
-		{ label: 'About me', icon: UserRound },
-		{ label: 'Experiences', icon: Briefcase },
-		{ label: 'Projects', icon: FolderKanban },
-		{ label: 'Summary of Me', icon: ScrollText },
-		{ label: 'Technical Skills', icon: Cpu },
+	const askTopics: { label: string; icon: Component, prompt: string }[] = [
+		{
+			label: 'About me',
+			icon: UserRound,
+			prompt:
+				'Tell me about Ernesto Razo'
+		},
+		{
+			label: 'Experiences',
+			icon: Briefcase,
+			prompt:
+				"Tell me the work experience of Ernesto Razo"
+		},
+		{
+			label: 'Projects',
+			icon: FolderKanban,
+			prompt:
+				"Provide me a list of projects Ernesto Razo has worked on"
+		},
+		{
+			label: 'Summary of Me',
+			icon: ScrollText,
+			prompt:
+				"Create a 'Summary of Ernesto Razo' using headings and bullet points for strengths, skills, motivations, problem-solving approach."
+		},
+		{
+			label: 'Technical Skills',
+			icon: Cpu,
+			prompt:
+				"List Ernesto Razo's technical skills."
+		}
 	];
 
 	onMount(() => {
@@ -84,7 +142,7 @@
 			if (cancelled) return;
 			instance = await tsParticles.load({
 				id: 'tsparticles',
-				options: particlesConfig,
+				options: particlesConfig
 			});
 			if (cancelled) {
 				instance?.destroy();
@@ -99,15 +157,17 @@
 	});
 </script>
 
-<div class="relative flex min-h-dvh max-h-dvh flex-col overflow-hidden bg-background text-foreground">
+<div
+	class="relative flex max-h-dvh min-h-dvh flex-col overflow-hidden bg-background text-foreground"
+>
 	<div
 		class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,var(--color-accent),transparent)] opacity-70 dark:opacity-40"
-		aria-hidden="true">
-  </div>
+		aria-hidden="true"
+	></div>
 	<div
 		class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_80%_100%,oklch(0.85_0.08_250/0.12),transparent)] dark:bg-[radial-gradient(ellipse_50%_40%_at_80%_100%,oklch(0.45_0.12_250/0.15),transparent)]"
-		aria-hidden="true">
-  </div>
+		aria-hidden="true"
+	></div>
 
 	<Navbar />
 
@@ -121,7 +181,7 @@
 			{#if !hasConversation}
 				<IntroSection />
 			{:else}
-				<Chatboard {messages} />
+				<Chatboard {messages} {isRequesting} />
 			{/if}
 		</div>
 	</div>
@@ -134,6 +194,7 @@
 				bind:value={chatMessage}
 				onsend={handleChatSend}
 				topics={askTopics}
+				disabled={isRequesting}
 				class="w-full"
 			/>
 		</section>

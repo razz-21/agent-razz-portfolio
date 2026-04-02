@@ -1,13 +1,93 @@
 <script lang="ts">
+	import { Spinner } from '$lib/components/ui/spinner';
+	import { marked } from 'marked';
+	import sanitizeHtml from 'sanitize-html';
+
 	let {
 		role,
 		content,
+		isLoading = false
 	}: {
 		role: 'user' | 'assistant';
 		content: string;
+		isLoading?: boolean;
 	} = $props();
 
 	const isUser = $derived(role === 'user');
+	const showLoading = $derived(isLoading && role === 'assistant' && content.length === 0);
+
+	const loadingLabelOptions = [
+		'Please wait ...',
+		'Finalizing your response ...',
+		'Fetching more context ...',
+		'Working on it ...',
+		'Just a moment ...',
+		'Cross-checking details ...',
+		'Tuning the finishing touches ...'
+	] as const;
+
+	function pickLoadingLabel() {
+		return loadingLabelOptions[Math.floor(Math.random() * loadingLabelOptions.length)];
+	}
+
+	// Pick once per component instance so the label stays stable while loading.
+	const loadingLabel = pickLoadingLabel();
+
+	const sanitizedHtml = $derived.by(() => {
+		// Marked outputs HTML; we sanitize it before rendering to avoid XSS.
+		const dirty = marked.parse(content ?? '', { gfm: true, breaks: true });
+
+		return sanitizeHtml(dirty, {
+			allowedTags: [
+				'a',
+				'br',
+				'p',
+				'strong',
+				'b',
+				'em',
+				'i',
+				'code',
+				'pre',
+				'blockquote',
+				'ul',
+				'ol',
+				'li',
+				'h1',
+				'h2',
+				'h3',
+				'h4',
+				'h5',
+				'h6',
+				'span',
+				'hr'
+			],
+			allowedAttributes: {
+				a: ['href', 'title', 'target', 'rel'],
+				// Prevent passing arbitrary attributes through the sanitizer.
+				span: [],
+				code: [],
+				pre: [],
+				p: [],
+				strong: [],
+				b: [],
+				em: [],
+				i: [],
+				blockquote: [],
+				ul: [],
+				ol: [],
+				li: [],
+				h1: [],
+				h2: [],
+				h3: [],
+				h4: [],
+				h5: [],
+				h6: [],
+				hr: []
+			},
+			allowedSchemes: ['http', 'https', 'mailto'],
+			allowedSchemesAppliedToAttributes: ['href']
+		});
+	});
 </script>
 
 <div
@@ -16,10 +96,20 @@
 	aria-label={isUser ? 'You' : 'Assistant'}
 >
 	<div
-		class="max-w-[min(85%,28rem)] rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed shadow-sm {isUser
+		class="max-w-[min(85%,28rem)] rounded-lg px-4 py-2.5 text-sm {isUser
 			? 'bg-primary text-primary-foreground'
-			: 'bg-neutral-200 text-neutral-900 dark:bg-zinc-700 dark:text-zinc-50'}"
+			: 'bg-neutral-50 text-neutral-700 dark:bg-zinc-700 dark:text-zinc-50 border border-border/90'}"
 	>
-		<p class="whitespace-pre-wrap wrap-break-word">{content}</p>
+		<div class="wrap-break-word">
+			{#if showLoading}
+				<span class="inline-flex items-center gap-2 leading-relaxed">
+					<Spinner />
+					<span>{loadingLabel}</span>
+				</span>
+			{:else}
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+				{@html sanitizedHtml}
+			{/if}
+		</div>
 	</div>
 </div>

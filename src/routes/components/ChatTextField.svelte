@@ -5,7 +5,7 @@
 	import type { Component } from 'svelte';
 	import type { HTMLTextareaAttributes } from 'svelte/elements';
 
-	export type ChatTopic = { label: string; icon: Component };
+	export type ChatTopic = { label: string; icon: Component; prompt: string };
 
 	let {
 		value = $bindable(''),
@@ -26,6 +26,13 @@
 
 	let textareaRef: HTMLTextAreaElement | null = $state(null);
 
+	function setTextareaRef(node: HTMLTextAreaElement) {
+		textareaRef = node;
+		return () => {
+			if (textareaRef === node) textareaRef = null;
+		};
+	}
+
 	function autoGrow() {
 		const el = textareaRef;
 		if (!el) return;
@@ -37,31 +44,36 @@
 		const text = value.trim();
 		if (!text || disabled) return;
 		onsend?.(text);
+		value = '';
+		queueMicrotask(autoGrow);
 	}
 
 	function selectTopic(topic: ChatTopic) {
 		if (disabled) return;
-		value = topic.label;
-		queueMicrotask(() => textareaRef?.focus());
+		const prompt = topic.prompt.trim();
+		if (!prompt) return;
+
+		// Send immediately and clear the textarea so the UI feels responsive.
+		onsend?.(prompt);
+		value = '';
+		queueMicrotask(() => {
+			autoGrow();
+			textareaRef?.focus();
+		});
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
+		// `Enter` submits, `Shift+Enter` inserts a newline.
 		if (e.key !== 'Enter' || e.shiftKey) return;
-		if (e.metaKey || e.ctrlKey) {
-			e.preventDefault();
-			submitMessage();
-		}
+		if (e.isComposing) return;
+		e.preventDefault();
+		submitMessage();
 	}
-
-	$effect(() => {
-		void value;
-		queueMicrotask(autoGrow);
-	});
 </script>
 
 <div
 	class={cn(
-		'flex flex-col rounded-2xl border border-border/60 bg-card px-3.5 pb-3 pt-3 shadow-sm dark:border-white/10 dark:bg-[oklch(0.22_0_0)]',
+		'flex flex-col rounded-2xl border border-teal-700/40 bg-card px-3.5 pb-3 pt-3 dark:border-white/10 dark:bg-[oklch(0.22_0_0)]',
 		className
 	)}
 >
@@ -89,7 +101,7 @@
 	{/if}
 	<label class="sr-only" for="chat-message">Message</label>
 	<textarea
-		bind:this={textareaRef}
+		{@attach setTextareaRef}
 		id="chat-message"
 		bind:value
 		{placeholder}
