@@ -4,8 +4,8 @@
 	import Moon from '@lucide/svelte/icons/moon';
 	import { onMount } from 'svelte';
 
-	const cvHref = '/cv.pdf';
-	const githubHref = 'https://github.com';
+	const cvHref = '/CV - Ernesto Razo [03.25.2026].pdf';
+	const githubHref = 'https://github.com/razz-21/';
 
 	type Theme = 'dark' | 'light';
 
@@ -54,7 +54,7 @@
     </Button>
   
     <nav class="flex items-center gap-1 sm:gap-2" aria-label="Primary">
-      <Button href={cvHref} variant="ghost" class="text-sm font-medium">Get CV</Button>
+      <Button href={cvHref} download="Ernesto_Razo_CV.pdf" variant="ghost" class="text-sm font-medium">Get CV</Button>
       <Button
         href={githubHref}
         target="_blank"
