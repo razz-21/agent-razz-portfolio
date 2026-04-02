@@ -108,7 +108,14 @@
 				</span>
 			{:else}
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html sanitizedHtml}
+				<div
+					class="chat-html prose prose-sm max-w-none leading-relaxed first:mt-0
+						{isUser
+						? 'prose-invert prose-headings:text-inherit prose-p:text-inherit prose-li:text-inherit prose-strong:text-inherit prose-blockquote:text-inherit prose-code:text-inherit prose-a:text-primary-foreground/95 prose-a:underline-offset-2'
+						: 'text-neutral-700 dark:prose-invert dark:text-zinc-50'}"
+				>
+					{@html sanitizedHtml}
+				</div>
 			{/if}
 		</div>
 	</div>

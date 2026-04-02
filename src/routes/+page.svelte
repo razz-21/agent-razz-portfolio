@@ -11,46 +11,119 @@
 	import { fetchChatTextStream } from '../services/chat.service.js';
 	import type { ChatMessage } from '$lib/types/chat.js';
 	import type { Component } from 'svelte';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { loadSlim } from '@tsparticles/slim';
 	import { tsParticles } from '@tsparticles/engine';
 	import type { Container } from '@tsparticles/engine';
+	import { themeStore } from '$lib/store/theme.store';
 
-	const particlesConfig = {
-		fullScreen: { enable: false },
-		background: { color: { value: 'transparent' } },
-		particles: {
-			color: {
-				value: '#E5E4E9'
+	let particleColor = $derived(
+		$themeStore === 'dark' ? '#b7b5c225' : '#E5E4E9'
+	)
+
+	const particlesConfig = $derived(
+		{
+			fullScreen: { enable: false },
+			background: { color: { value: 'transparent' } },
+			particles: {
+				color: {
+					value: particleColor
+				},
+				links: {
+					enable: true,
+					color: particleColor
+				},
+				move: {
+					enable: true
+				},
+				opacity: {
+					value: 0.5
+				},
+				number: {
+					value: 50
+				}
 			},
-			links: {
-				enable: true,
-				color: '#E5E4E9'
-			},
-			move: {
-				enable: true
-			},
-			opacity: {
-				value: 0.5
-			},
-			number: {
-				value: 50
+			style: {
+				position: 'absolute',
+				height: '100%',
+				width: '100%'
 			}
-		},
-		style: {
-			position: 'absolute',
-			height: '100%',
-			width: '100%'
 		}
-	};
+	)
 
 	let chatMessage = $state('');
 	let messages = $state<ChatMessage[]>([]);
 	let isRequesting = $state(false);
 
+	let instance: Container | undefined;
+
 	const hasConversation = $derived(messages.length > 0);
 
-	function handleChatSend(message: string) {
+	const askTopics: { label: string; icon: Component, prompt: string }[] = [
+		{
+			label: 'About me',
+			icon: UserRound,
+			prompt:
+				'Tell me about Ernesto Razo'
+		},
+		{
+			label: 'Experiences',
+			icon: Briefcase,
+			prompt:
+				"Tell me the work experience of Ernesto Razo"
+		},
+		{
+			label: 'Projects',
+			icon: FolderKanban,
+			prompt:
+				"Provide me a list of projects Ernesto Razo has worked on"
+		},
+		{
+			label: 'Summary of Me',
+			icon: ScrollText,
+			prompt:
+				"Create a 'Summary of Ernesto Razo' using headings and bullet points for strengths, skills, motivations, problem-solving approach."
+		},
+		{
+			label: 'Technical Skills',
+			icon: Cpu,
+			prompt:
+				"List Ernesto Razo's technical skills."
+		}
+	];
+
+	$effect(() => {
+		if (instance && particleColor) {
+			const options = instance.options as any;
+			options.particles.color.value = particleColor;
+			options.particles.links.color = particleColor;
+			void instance.refresh();
+		}
+	})
+
+	onMount(() => {
+		let cancelled = false;
+
+		void (async () => {
+			await loadSlim(tsParticles);
+			if (cancelled) return;
+			instance = await tsParticles.load({
+				id: 'tsparticles',
+				options: particlesConfig
+			});
+			if (cancelled) {
+				instance?.destroy();
+				instance = undefined;
+			}
+		})();
+
+		return () => {
+			cancelled = true;
+			instance?.destroy();
+		};
+	});
+
+	async function handleChatSend(message: string) {
 		const trimmed = message.trim();
 		if (!trimmed || isRequesting) return;
 
@@ -98,63 +171,18 @@
 				isRequesting = false;
 			}
 		})();
+
+		await tick();
+		scrollToBottom();
 	}
 
-	const askTopics: { label: string; icon: Component, prompt: string }[] = [
-		{
-			label: 'About me',
-			icon: UserRound,
-			prompt:
-				'Tell me about Ernesto Razo'
-		},
-		{
-			label: 'Experiences',
-			icon: Briefcase,
-			prompt:
-				"Tell me the work experience of Ernesto Razo"
-		},
-		{
-			label: 'Projects',
-			icon: FolderKanban,
-			prompt:
-				"Provide me a list of projects Ernesto Razo has worked on"
-		},
-		{
-			label: 'Summary of Me',
-			icon: ScrollText,
-			prompt:
-				"Create a 'Summary of Ernesto Razo' using headings and bullet points for strengths, skills, motivations, problem-solving approach."
-		},
-		{
-			label: 'Technical Skills',
-			icon: Cpu,
-			prompt:
-				"List Ernesto Razo's technical skills."
+	function scrollToBottom() {
+		const chatboard = document.getElementById('chatboard');
+		if (chatboard) {
+			chatboard.scrollTop = chatboard.scrollHeight;
+			chatboard.scrollIntoView({ behavior: 'smooth' });
 		}
-	];
-
-	onMount(() => {
-		let cancelled = false;
-		let instance: Container | undefined;
-
-		void (async () => {
-			await loadSlim(tsParticles);
-			if (cancelled) return;
-			instance = await tsParticles.load({
-				id: 'tsparticles',
-				options: particlesConfig
-			});
-			if (cancelled) {
-				instance?.destroy();
-				instance = undefined;
-			}
-		})();
-
-		return () => {
-			cancelled = true;
-			instance?.destroy();
-		};
-	});
+	}
 </script>
 
 <div

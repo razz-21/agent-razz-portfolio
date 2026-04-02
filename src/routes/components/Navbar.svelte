@@ -3,13 +3,12 @@
 	import Sun from '@lucide/svelte/icons/sun';
 	import Moon from '@lucide/svelte/icons/moon';
 	import { onMount } from 'svelte';
+	import { themeStore, type Theme } from '$lib/store/theme.store';
 
 	const cvHref = '/CV - Ernesto Razo [03.25.2026].pdf';
 	const githubHref = 'https://github.com/razz-21/';
 
-	type Theme = 'dark' | 'light';
-
-	let theme = $state<Theme>('light');
+	let theme = $derived($themeStore);
 
 	function applyTheme(nextTheme: Theme) {
 		const root = document.documentElement;
@@ -26,14 +25,14 @@
 					? 'dark'
 					: 'light';
 
-		theme = initialTheme;
+		$themeStore = initialTheme;
 		localStorage.setItem('theme', initialTheme);
 		applyTheme(initialTheme);
 	});
 
 	function toggleTheme() {
-		const nextTheme: Theme = theme === 'dark' ? 'light' : 'dark';
-		theme = nextTheme;
+		const nextTheme: Theme = $themeStore === 'dark' ? 'light' : 'dark';
+		$themeStore = nextTheme;
 		localStorage.setItem('theme', nextTheme);
 		applyTheme(nextTheme);
 	}
@@ -47,10 +46,17 @@
       href="/"
       variant="secondary"
       size="icon-lg"
-      class="rounded-xl font-bold tracking-tight"
+      class="rounded-xl p-1.5"
       aria-label="Home"
     >
-      R
+      <img
+        src="/agent-razz-dev-icon.svg"
+        alt=""
+        width="28"
+        height="28"
+        class="size-7 object-contain"
+        decoding="async"
+      />
     </Button>
   
     <nav class="flex items-center gap-1 sm:gap-2" aria-label="Primary">

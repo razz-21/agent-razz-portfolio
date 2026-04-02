@@ -30,7 +30,7 @@
 	});
 </script>
 
-<div class="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto">
+<div id="chatboard" class="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto">
 	<div
 		{@attach setScrollRoot}
 		class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-3 px-4 pt-6 pb-2 [scrollbar-width:thin] sm:px-6"
