@@ -18,7 +18,7 @@
 	import { themeStore } from '$lib/store/theme.store';
 
 	let particleColor = $derived(
-		$themeStore === 'dark' ? '#b7b5c225' : '#E5E4E9'
+		$themeStore === 'dark' ? '#017b6f' : '#bee2d7'
 	)
 
 	const particlesConfig = $derived(
@@ -55,7 +55,7 @@
 	let messages = $state<ChatMessage[]>([]);
 	let isRequesting = $state(false);
 
-	let instance: Container | undefined;
+	let instance = $state<Container | undefined>(undefined);
 
 	const hasConversation = $derived(messages.length > 0);
 
@@ -93,13 +93,12 @@
 	];
 
 	$effect(() => {
-		if (instance && particleColor) {
-			const options = instance.options as any;
-			options.particles.color.value = particleColor;
-			options.particles.links.color = particleColor;
-			void instance.refresh();
-		}
-	})
+		const container = instance;
+		const options = particlesConfig;
+		if (!container) return;
+		// refresh() re-merges from the original load() snapshot; reset() updates that source.
+		void container.reset(options);
+	});
 
 	onMount(() => {
 		let cancelled = false;
