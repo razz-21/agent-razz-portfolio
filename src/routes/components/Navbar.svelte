@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
+	import ContactMeDialog from './ContactMeDialog.svelte';
 	import Sun from '@lucide/svelte/icons/sun';
 	import Moon from '@lucide/svelte/icons/moon';
 	import { onMount } from 'svelte';
@@ -8,6 +9,7 @@
 	const cvHref = '/CV - Ernesto Razo [03.25.2026].pdf';
 	const githubHref = 'https://github.com/razz-21/';
 
+	let contactOpen = $state(false);
 	let theme = $derived($themeStore);
 
 	function applyTheme(nextTheme: Theme) {
@@ -36,6 +38,10 @@
 		localStorage.setItem('theme', nextTheme);
 		applyTheme(nextTheme);
 	}
+
+	function reloadHome() {
+		window.location.reload();
+	}
 </script>
 
 <div class="border-b border-t border-teal-300/20 bg-teal-100/20">
@@ -43,11 +49,12 @@
     class="relative z-10 flex shrink-0 items-center justify-between px-4 py-3 sm:px-4 sm:py-2 max-w-7xl mx-auto w-full"
   >
     <Button
-      href="/"
+      type="button"
       variant="secondary"
       size="icon-lg"
       class="rounded-xl p-1.5"
       aria-label="Home"
+      onclick={reloadHome}
     >
       <img
         src="/agent-razz-dev-icon.svg"
@@ -61,6 +68,14 @@
   
     <nav class="flex items-center gap-1 sm:gap-2" aria-label="Primary">
       <Button href={cvHref} download="Ernesto_Razo_CV.pdf" variant="ghost" class="text-sm font-medium">Get CV</Button>
+      <Button
+        type="button"
+        variant="ghost"
+        class="text-sm font-medium"
+        onclick={() => (contactOpen = true)}
+      >
+        Contact Me
+      </Button>
       <Button
         href={githubHref}
         target="_blank"
@@ -95,3 +110,5 @@
     </nav>
   </header>
 </div>
+
+<ContactMeDialog bind:open={contactOpen} />
